@@ -1,8 +1,18 @@
+var text1 = [];
+var text2 = [];
+var text3 = [];
+var text4 = [];
+var wins;
+var loss;
+
 const canvas = document.getElementById('myCanvas');
 const ctx = canvas.getContext('2d');
 
-const backgroundImage = new Image();
-backgroundImage.src = './bg/UI_MVP_VIctoryBG.png';
+const victoryImage = new Image();
+victoryImage.src = './bg/UI_MVP_VIctoryBG.png';
+
+const defeatImage = new Image();
+defeatImage.src = './bg/UI_MVP_DefeatBG.png';
 
 const valRed = "#FF4655";
 const valGreen = "#79D8BC";
@@ -10,14 +20,25 @@ const valGreen = "#79D8BC";
 function drawResult(context) {
     context.font = "550px tungsten, sans-serif";
     context.textAlign = "center";
-    context.fillStyle = valGreen;
-    context.fillText("VICTORY", 960, 458);
-    context.font = "128px tungsten, sans-serif";
-    context.textAlign = "right";
-    context.fillText("13", 285, 158);
-    context.textAlign = "left";
-    context.fillStyle = valRed;
-    context.fillText("11", 1640, 158);
+    if (wins < loss) {
+        context.fillStyle = valRed;
+        context.fillText("DEFEAT", 960, 458);
+        context.font = "128px tungsten, sans-serif";
+        context.textAlign = "right";
+        context.fillText(loss, 417, 158);
+        context.textAlign = "left";
+        context.fillStyle = valGreen;
+        context.fillText(wins, 1509, 158);
+    } else {
+        context.fillStyle = valGreen;
+        context.fillText("VICTORY", 960, 458);
+        context.font = "128px tungsten, sans-serif";
+        context.textAlign = "right";
+        context.fillText(wins, 286, 158);
+        context.textAlign = "left";
+        context.fillStyle = valRed;
+        context.fillText(loss, 1640, 158);
+    };
 };
 
 function drawAgentGradient(context) {
@@ -29,7 +50,7 @@ function drawAgentGradient(context) {
     }
 };
 
-function drawRectangles(context, rectangleWidth, rectangleHeight) {
+function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
     // Calculate the x-coordinate of the first rectangle
     const x = (canvas.width - rectangleWidth * 5 - 27 * 4) / 2;
   
@@ -47,6 +68,8 @@ function drawRectangles(context, rectangleWidth, rectangleHeight) {
             
             image.onload = function() {  
                 context.drawImage(image, x + i * (rectangleWidth + 27), y, rectangleWidth, rectangleHeight);
+                // Draw Stats
+                drawAgentStats(ctx, i);
             }
     }
 
@@ -127,25 +150,99 @@ function drawAgents(context, imageWidth, imageHeight) {
   };
 };
 
-function drawAgentStats(context) {
+function drawAgentStats(context, grid) {
     // Calculate the x-coordinate of the first rectangle
-    const x = (canvas.width - 283 * 5 - 27 * 4) / 2;
+    const x = 30 + (310 * (grid+1))
   
     // Calculate the y-coordinate of the first rectangle
-    const y = canvas.height - 310 - 230;
+    const y = 626
   
-    // Loop through 5 rectangles and draw them on the canvas
-    for (let i = 0; i < 5; i++) {
-        context.font = "light 32px dinnext, sans-serif";
-        context.textAlign = "center";
-        context.fillStyle = "white";
-        context.fillText('Reyna', x + i * (283 + 27), y);
+    // Agent Name
+    context.font = "22px din-light, sans-serif";
+    context.textAlign = "center";
+    context.fillStyle = "white";
+    context.fillText(text1[grid], x, y);
+
+    // Riot ID
+    context.font = "28px din-bold, sans-serif";
+    context.fillText(text2[grid], x, y+40);
+    
+    //AVG Score Txt
+    context.font = "22px din-light, sans-serif";
+    context.fillText('AVG COMBAT SCORE', x, y+90);
+
+    //AVG Score Value
+    context.font = "36px din-medium, sans-serif";
+    context.fillText(text3[grid], x, y+129);
+
+    //KDA Txt
+    context.font = "22px din-light, sans-serif";
+    context.fillText('KDA', x, y+163);
+
+    //KDA Value
+    context.font = "36px din-medium, sans-serif";
+    context.fillText(text4[grid], x, y+202);
+};
+
+function retrieveText() {
+    var textByOption = {};
+
+    for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+
+        if (key.startsWith("option")) {
+            var parts = key.split("-");
+            var option = parts[0];
+            var textNum = parts[1];
+            var text = localStorage.getItem(key);
+
+            // Initialize the text arrays for the option if they don't exist
+            if (!textByOption[option]) {
+            textByOption[option] = {
+                text1: [],
+                text2: [],
+                text3: [],
+                text4: []
+            };
+            }
+
+            // Add the text to the appropriate array for the option
+            if (textNum === "text1") {
+                textByOption[option].text1.push(text);
+            } else if (textNum === "text2") {
+                textByOption[option].text2.push(text);
+            } else if (textNum === "text3") {
+                textByOption[option].text3.push(text);
+            } else if (textNum === "text4") {
+                textByOption[option].text4.push(text);
+            }
         }
+    }
+  
+    // Get the keys for the textByOption object in alphabetical order
+    var options = Object.keys(textByOption).sort();
+    
+    // Iterate over the options and retrieve the text for each option
+    for (var i = 0; i < options.length; i++) {
+        var option = options[i];
+        text1 = text1.concat(textByOption[option].text1);
+        text2 = text2.concat(textByOption[option].text2);
+        text3 = text3.concat(textByOption[option].text3);
+        text4 = text4.concat(textByOption[option].text4);
+    }
+    wins = document.getElementById("rounW").value;
+    loss = document.getElementById("rounL").value;
 };
 
 // Draw the background image before calling the drawRectangles function
-backgroundImage.onload = function() {
-    ctx.drawImage(backgroundImage, 0, 0);
+// backgroundImage.onload = function() {
+function generateImage() {
+    retrieveText();
+    if (wins < loss) {
+        ctx.drawImage(defeatImage, 0, 0);
+    } else {
+        ctx.drawImage(victoryImage, 0, 0);
+    };
     // Draw the Result
     drawResult(ctx);
     // Draw the Images
@@ -153,7 +250,5 @@ backgroundImage.onload = function() {
     // Draw the Gradient
     drawAgentGradient(ctx);
     // Draw the Rectangles
-    drawRectangles(ctx, 283, 310);
-    // Draw Stats
-    drawAgentStats(ctx);
+    drawStatBoxs(ctx, 283, 310);
 };
