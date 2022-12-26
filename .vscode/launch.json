@@ -1,11 +1,11 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "type": "msedge",
-        "request": "launch",
-        "name": "Launch hello.html",
-        "file": "${workspaceFolder}/index.html"
-      }
-    ]
-  }
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "firefox",
+      "request": "launch",
+      "name": "Launch my cool app",
+      "url": "http://127.0.0.1:3000/index.html"
+    }
+  ]
+}

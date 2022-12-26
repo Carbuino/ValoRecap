@@ -35,11 +35,11 @@
         <p>Select an option from the dropdown list to populate the text entry spaces:</p>
 
         <select id="dropdown" onchange="populateText()">
-          <option value="option1">Agent 1</option>
-          <option value="option2">Agent 2</option>
-          <option value="option3">Agent 3</option>
-          <option value="option4">Agent 4</option>
-          <option value="option5">Agent 5</option>
+          <option value="option1">Left Agent</option>
+          <option value="option2">Right Agent</option>
+          <option value="option3">CenterLeft Agent</option>
+          <option value="option4">CenterRight Agent</option>
+          <option value="option5">Center Agent</option>
         </select>
       
         <br><br>
@@ -51,7 +51,8 @@
         <input type="text" id="rounW" placeholder="Green Wins">
         <input type="text" id="rounL" placeholder="Red Wins">
 
-        <button onclick="generateImage()">Populate Text</button>
+        <button onclick="retrieveText()">Populate Text</button>
+        <button onclick="scrapeJSON('Carbon', '099')">Scape JSON</button>
         <script src="js/store.js"></script>
         <canvas id="myCanvas" width="1920" height="1080"></canvas>
         <script src="js/create_image.js"></script>
