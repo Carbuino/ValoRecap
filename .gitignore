@@ -1,3 +1,5 @@
 comp_test.json
 deathmatch_test.json
-bg/align.png
+generate_image/bg/align.png
+node_modules/*
+config.json

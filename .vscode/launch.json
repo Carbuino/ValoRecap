@@ -2,10 +2,25 @@
   "version": "0.2.0",
   "configurations": [
     {
+    "name": "Launch via node",
+    "type": "node",
+    "request": "launch",
+    "cwd": "${workspaceFolder}",
+    "runtimeArgs": ["."]
+    },
+    {
+      "name": "Launch test.js",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": ["test.js"]
+      },
+    {
       "type": "firefox",
       "request": "launch",
       "name": "Launch my cool app",
-      "url": "http://127.0.0.1:3000/index.html"
+      "url": "http://127.0.0.1:3000/webpage/index.html"
     }
   ]
+
 }

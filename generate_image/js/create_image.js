@@ -1,3 +1,9 @@
+const { createCanvas, registerFont, Image, loadImage } = require('canvas')
+// registerFont('./generate_image/fonts/Tungsten-Bold.ttf', { family: 'Tungsten' });
+// registerFont('./generate_image/fonts/DINNextW1G-Light.ttf', { family: 'DIN Next W1G', weight: 'light' });
+// registerFont('./generate_image/fonts/DINNextW1G-Regular.ttf', { family: 'DIN Next W1G', weight: 'normal' });
+// registerFont('./generate_image/fonts/DINNextW1G-Medium.ttf', { family: 'DIN Next W1G', weight: 'medium' });
+
 var agentsNames = [];
 var riotIDs = [];
 var ACSs = [];
@@ -9,22 +15,13 @@ var wins = 0;
 var loss = 0;
 var gameResult;
 
-const canvas = document.getElementById('myCanvas');
+const canvas = createCanvas(1920, 1080)
 const ctx = canvas.getContext('2d');
 
-const victoryImage = new Image();
-victoryImage.src = './bg/UI_MVP_VIctoryBG.png';
-
-const defeatImage = new Image();
-defeatImage.src = './bg/UI_MVP_DefeatBG.png';
-
-const drawImage = new Image();
-drawImage.src = './bg/UI_MVP_DrawBG.png';
-
-const valRed = "#FF4655";
-const valGreen = "#79D8BC";
-const valGray = "#BCC6C3";
-const valGold = "#F0CB74";
+const valRed = '#FF4655';
+const valGreen = '#79D8BC';
+const valGray = '#BCC6C3';
+const valGold = '#F0CB74';
 const drawOrder = [0, 4, 1, 3, 2];
 
 var agentPortraits = {};
@@ -49,9 +46,9 @@ function resetVars() {
     gameResult = undefined;
 };
 
-async function scrapeJSON(id, tag) {
+async function scrapeJSON(puuid, id, tag, region) {
     async function getJSON() {
-        let response = await fetch('./comp_test.json');
+        let response = await fetch(`https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/${region}/${puuid}?size=1`);
         let data = await response.json();
         return data
     }
@@ -74,7 +71,7 @@ async function scrapeJSON(id, tag) {
     matchDetails.mode = matchData.metadata.mode
     matchDetails.time = matchData.metadata.game_length
 
-    if (matchData.metadata.mode == "Deathmatch") {
+    if (matchData.metadata.mode == 'Deathmatch') {
         // Sort list from worst to best performers, by most kills then highest ACS
         statsList.sort((a,b) => {
             if (a[4] !== b[4]) {
@@ -112,7 +109,7 @@ async function scrapeJSON(id, tag) {
             wins = killsTop5[playerTopIndex][4]
             loss = killsTop5[4][4]
         }
-    } else if (matchData.metadata.mode == "Custom") {
+    } else if (matchData.metadata.mode == 'Custom') {
         console.log('custom deez nutz')
     } else {
         // Any other gamemode
@@ -137,14 +134,24 @@ async function scrapeJSON(id, tag) {
         gameResult = matchData.teams[playerTeamColour].has_won;
         // Add all the information required to draw the image
         teamStats.forEach(element => {
-            riotIDs.push(element[0])
-            agentsNames.push(element[2])
-            ACSs.push(~~(element[3]/(wins + loss)))
-            KDAs.push(`${element[4]} / ${element[5]} / ${element[6]}`)
+            riotIDs.push(element[0]);
+            agentsNames.push(element[2]);
+            ACSs.push(~~(element[3]/(wins + loss)));
+            KDAs.push(`${element[4]} / ${element[5]} / ${element[6]}`);
         });
     };
     goldName = playerList[playerIndex].name
-    generateImage()
+    // Set BG image
+    await drawBG(ctx);
+    // Draw the Result
+	await drawResult(ctx);
+	// Draw the Images
+	await drawAgents(ctx, 850, 772);
+	// Draw the Gradient
+	await drawAgentGradient(ctx);
+	// Draw the Rectangles
+	await drawStatBoxs(ctx, 283, 310);
+    return canvas.toBuffer();
 };
 
 async function retrieveText() {
@@ -153,8 +160,8 @@ async function retrieveText() {
 	for (var i = 0; i < localStorage.length; i++) {
 		var key = localStorage.key(i);
 
-		if (key.startsWith("option")) {
-			var parts = key.split("-");
+		if (key.startsWith('option')) {
+			var parts = key.split('-');
 			var option = parts[0];
 			var textNum = parts[1];
 			var text = localStorage.getItem(key);
@@ -170,13 +177,13 @@ async function retrieveText() {
 			}
 
 			// Add the text to the appropriate array for the option
-			if (textNum === "text1") {
+			if (textNum === 'text1') {
 				textByOption[option].text1.push(text.toUpperCase());
-			} else if (textNum === "text2") {
+			} else if (textNum === 'text2') {
 				textByOption[option].text2.push(text);
-			} else if (textNum === "text3") {
+			} else if (textNum === 'text3') {
 				textByOption[option].text3.push(text);
-			} else if (textNum === "text4") {
+			} else if (textNum === 'text4') {
 				textByOption[option].text4.push(text);
 			}
 		}
@@ -193,52 +200,52 @@ async function retrieveText() {
 		ACSs = ACSs.concat(textByOption[option].text3);
 		KDAs = KDAs.concat(textByOption[option].text4);
 	}
-	wins = document.getElementById("roundW").value;
-	loss = document.getElementById("roundL").value;
-    matchDetails.map = document.getElementById("matchMap").value;
-	matchDetails.mode = document.getElementById("matchMode").value;
-    matchDetails.time = document.getElementById("matchTime").value;
+	wins = document.getElementById('roundW').value;
+	loss = document.getElementById('roundL').value;
+    matchDetails.map = document.getElementById('matchMap').value;
+	matchDetails.mode = document.getElementById('matchMode').value;
+    matchDetails.time = document.getElementById('matchTime').value;
     generateImage()
 };
 
 function drawResult(context) {
     function matchInfo(context) {
-        context.font = "20px din, sans-serif";
-	    context.textAlign = "center";
-        // https://stackoverflow.com/a/58531661
+        context.font = '20px "DIN Next W1G"';
+	    context.textAlign = 'center';
         let time;
         try {
+            // https://stackoverflow.com/a/58531661
             time = new Date(matchDetails.time).toISOString().slice(11,19)  
         } catch {
             time = matchDetails.time
         };
         
-        context.fillText(`${matchDetails.map} ⬩ ${matchDetails.mode} ⬩ ${time}`, 960, 44);
+        context.fillText(`${matchDetails.map} - ${matchDetails.mode} - ${time}`, 960, 44);
     };
     function victory(context)  {
         context.fillStyle = valGreen;
-        context.fillText("VICTORY", 960, 458);
+        context.fillText('VICTORY', 960, 458);
         winX = 282;
         lossX = 1642;
         matchInfo(context)
     };
     function draw(context)  {
         context.fillStyle = valGray;
-        context.fillText("DRAW", 960, 458);
+        context.fillText('DRAW', 960, 458);
         winX = 493
         lossX = 1436
         matchInfo(context)
     };
     function defeat(context)  {
         context.fillStyle = valRed;
-        context.fillText("DEFEAT", 960, 458);
+        context.fillText('DEFEAT', 960, 458);
         winX = 417
         lossX = 1511
         matchInfo(context)
     };
     // init
-	context.font = "550px tungsten, sans-serif";
-	context.textAlign = "center";
+	context.font = '550px "Tungsten"';
+	context.textAlign = 'center';
 	var winX;
 	var lossX;
     if (typeof gameResult !== 'undefined' && wins !== loss) {
@@ -255,25 +262,23 @@ function drawResult(context) {
         victory(context)
     };
     // Draw Rounds Won/Lost
-	context.font = "128px tungsten, sans-serif";
+	context.font = '128px "Tungsten"';
 	context.fillStyle = valGreen;
-	context.textAlign = "right";
+	context.textAlign = 'right';
 	context.fillText(wins, winX, 158);
-	context.textAlign = "left";
+	context.textAlign = 'left';
 	context.fillStyle = valRed;
 	context.fillText(loss, lossX, 158);
 };
 
-function drawAgentGradient(context) {
+async function drawAgentGradient(context) {
 	const gradHeight = 600;
-	const image = new Image();
-	image.src = "./bg/UI_MVP_floor.png";
-	image.onload = function() {
-		context.drawImage(image, 0, gradHeight, canvas.width, canvas.height - gradHeight);
-	}
+    await loadImage('./generate_image/bg/UI_MVP_floor.png').then((image) => {
+        context.drawImage(image, 0, gradHeight, canvas.width, canvas.height - gradHeight);
+    });
 };
 
-function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
+async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
     function drawAgentStats(context, index, location) {
         // Calculate the x-coordinate of the first box
         const x = 30 + (310 * (location + 1))
@@ -282,33 +287,33 @@ function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
         const y = 626
     
         // Agent Name
-        context.font = "22px din-light, sans-serif";
-        context.textAlign = "center";
-        context.fillStyle = "white";
+        context.font = '300 22px "DIN Next W1G"';
+        context.textAlign = 'center';
+        context.fillStyle = 'white';
         context.fillText(agentsNames[index], x, y);
     
         // Riot ID
-        context.font = "28px din-bold, sans-serif";
+        context.font = '500 28px "DIN Next W1G"';
         if (riotIDs[index] == goldName) {
             context.fillStyle = valGold;
         }
         context.fillText(riotIDs[index], x, y + 40);
-        context.fillStyle = "white";
+        context.fillStyle = 'white';
     
         //AVG Score Txt
-        context.font = "22px din-light, sans-serif";
+        context.font = '300 22px "DIN Next W1G"';
         context.fillText('AVG COMBAT SCORE', x, y + 90);
     
         //AVG Score Value
-        context.font = "36px din-medium, sans-serif";
+        context.font = '500 36px "DIN Next W1G"';
         context.fillText(ACSs[index], x, y + 129);
     
         //KDA Txt
-        context.font = "22px din-light, sans-serif";
+        context.font = '300 22px "DIN Next W1G"';
         context.fillText('KDA', x, y + 163);
     
         //KDA Value
-        context.font = "36px din-medium, sans-serif";
+        context.font = '500 36px "DIN Next W1G"';
         context.fillText(KDAs[index], x, y + 202);
     };
 	// Calculate the x-coordinate of the first rectangle
@@ -322,28 +327,33 @@ function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
         let j = drawOrder[i]
 		const image = new Image();
 		if (j == 2) {
-			image.src = './bg/mvp_box.png';
+			await loadImage('./generate_image/bg/mvp_box.png').then((image) => {
+                context.drawImage(image, x + j * (rectangleWidth + 27), y, rectangleWidth, rectangleHeight);
+            });
 		} else {
-			image.src = './bg/box.png';
+			await loadImage('./generate_image/bg/box.png').then((image) => {
+                context.drawImage(image, x + j * (rectangleWidth + 27), y, rectangleWidth, rectangleHeight);
+            });
 		}
-
-		image.onload = function() {
-			context.drawImage(image, x + j * (rectangleWidth + 27), y, rectangleWidth, rectangleHeight);
-			// Draw Stats
-			drawAgentStats(context, i, j);
-		}
+		drawAgentStats(context, i, j);
 	}
 
 };
 
-function drawAgents(context, imageWidth, imageHeight) {
-    function draw(context, j, x, y, mw, mh) {
-        const image = new Image();
-        image.src = imageURLs[j];
-        image.onload = function() {
+async function drawAgents(context, imageWidth, imageHeight) {
+    async function draw(context, i, x, y, mw, mh) {
+        await loadImage(imageURLs[i]).then((image) => {
             context.drawImage(image, x, y, mw, mh);
-        };
-    }
+        });  
+    };
+
+    for (let i = 0; i < agentsNames.length; i++) {
+        if (agentsNames[i] in agentPortraits) {
+            imageURLs.push(agentPortraits[agentsNames[i]])
+        } else {
+            imageURLs.push('./bg/missing.png')
+        };    
+    };
     
 	// Calculate the x-coordinate of the first rectangle
 	const startX = ((canvas.width - 300 * 5 - 11 * 4) - 550) / 2;
@@ -353,60 +363,53 @@ function drawAgents(context, imageWidth, imageHeight) {
 		let j = drawOrder[i];
         // First box
         if (j == 0) {
-			let multW = imageWidth * 0.9
-			let multH = imageHeight * 0.9
-			let x = startX + 44
+			let multW = imageWidth * 0.9;
+			let multH = imageHeight * 0.9;
+			let x = startX + 44;
 			let y = canvas.height - multH - 38;
-            draw(context, i, x, y, multW, multH)
+            await draw(context, i, x, y, multW, multH);
         // Second Box
 		} else if (j == 1) {
-			let x = startX + j * (300 + 12)
+			let x = startX + j * (300 + 12);
 			let y = canvas.height - imageHeight - 38;
-            draw(context, i, x, y, imageWidth, imageHeight)
+            await draw(context, i, x, y, imageWidth, imageHeight);
         // Third Box
         } else if (j == 2) {
-            let multW = imageWidth * 1.1
-            let multH = imageHeight * 1.1
-            let x = startX + j * (300) - 17
+            let multW = imageWidth * 1.1;
+            let multH = imageHeight * 1.1;
+            let x = startX + j * (300) - 17;
             let y = canvas.height - multH - 38;
-            draw(context, i, x, y, multW, multH)
+            await draw(context, i, x, y, multW, multH);
         // Forth Box
         } else if (j == 3) {
-			let x = startX + j * (300 + 10.5)
+			let x = startX + j * (300 + 10.5);
 			let y = canvas.height - imageHeight - 38;
-            draw(context, i, x, y, imageWidth, imageHeight)
+            await draw(context, i, x, y, imageWidth, imageHeight);
         // Fifth Box
 		} else {
-			let multW = imageWidth * 0.9
-			let multH = imageHeight * 0.9
-			let x = startX + j * (300 + 21)
+			let multW = imageWidth * 0.9;
+			let multH = imageHeight * 0.9;
+			let x = startX + j * (300 + 21);
 			let y = canvas.height - multH - 38;
-            draw(context, i, x, y, multW, multH)
+            await draw(context, i, x, y, multW, multH);
 		}
 	};
 };
 
-function generateImage() {
-    for (let i = 0; i < agentsNames.length; i++) {
-        if (agentsNames[i] in agentPortraits) {
-            imageURLs.push(agentPortraits[agentsNames[i]])
-        } else {
-            imageURLs.push('./bg/missing.png')
-        }
+async function drawBG(context) {
+    if (wins < loss) {
+        await loadImage('./generate_image/bg/UI_MVP_DefeatBG.png').then((image) => {
+            context.drawImage(image, 0, 0);
+        });
+    } else if (wins == loss) {
+        await loadImage('./generate_image/bg/UI_MVP_DrawBG.png').then((image) => {
+            context.drawImage(image, 0, 0);
+        });
+    } else {
+        await loadImage('./generate_image/bg/UI_MVP_VictoryBG.png').then((image) => {
+            context.drawImage(image, 0, 0);
+        });
     };
-	if (wins < loss) {
-		ctx.drawImage(defeatImage, 0, 0);
-	} else if (wins == loss) {
-		ctx.drawImage(drawImage, 0, 0);
-	} else {
-		ctx.drawImage(victoryImage, 0, 0);
-	};
-	// Draw the Result
-	drawResult(ctx);
-	// Draw the Images
-	drawAgents(ctx, 850, 772);
-	// Draw the Gradient
-	drawAgentGradient(ctx);
-	// Draw the Rectangles
-	drawStatBoxs(ctx, 283, 310);
 };
+
+module.exports.scrapeJSON = scrapeJSON;
