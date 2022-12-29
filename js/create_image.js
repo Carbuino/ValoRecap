@@ -3,6 +3,7 @@ var riotIDs = [];
 var ACSs = [];
 var KDAs = [];
 var imageURLs = [];
+var matchDetails = {};
 var goldName = '';
 var wins = 0;
 var loss = 0;
@@ -37,12 +38,15 @@ fetch('https://valorant-api.com/v1/agents?isPlayableCharacter=true')
 
 function resetVars() {
     agentsNames = [];
-	riotIDs = [];
-	ACSs = [];
-	KDAs = [];
-	imageURLs = [];
-	wins = 0;
-	loss = 0;
+    riotIDs = [];
+    ACSs = [];
+    KDAs = [];
+    imageURLs = [];
+    matchDetails = {};
+    goldName = '';
+    wins = 0;
+    loss = 0;
+    gameResult = undefined;
 };
 
 async function scrapeJSON(id, tag) {
@@ -65,6 +69,10 @@ async function scrapeJSON(id, tag) {
         statsList.push([playerList[i].name, playerList[i].tag, playerList[i].character.toUpperCase(), playerList[i].stats.score, playerList[i].stats.kills, playerList[i].stats.deaths, playerList[i].stats.assists]);
         if (id == playerList[i].name && tag == playerList[i].tag) { playerIndex = i };
     };
+
+    matchDetails.map = matchData.metadata.map
+    matchDetails.mode = matchData.metadata.mode
+    matchDetails.time = matchData.metadata.game_length
 
     if (matchData.metadata.mode == "Deathmatch") {
         // Sort list from worst to best performers, by most kills then highest ACS
@@ -107,13 +115,15 @@ async function scrapeJSON(id, tag) {
     } else if (matchData.metadata.mode == "Custom") {
         console.log('custom deez nutz')
     } else {
+        // Any other gamemode
         let playerTeamColour = playerList[playerIndex]['team'].toLowerCase()
         let playerTeam = matchData.players[playerTeamColour]
         let teamStats = [];
-
+        // Process stats for everyone on team
         for (var i = 0; i < playerTeam.length; i++) {
             teamStats.push([playerTeam[i].name, playerTeam[i].tag, playerTeam[i].character.toUpperCase(), playerTeam[i].stats.score, playerTeam[i].stats.kills, playerTeam[i].stats.deaths, playerTeam[i].stats.assists]);
         };
+        // Sort list from worst to best performers, by most kills [4] then highest ACS [3]
         teamStats.sort((a,b) => {
             if (a[4] !== b[4]) {
                 return a[4] - b[4]
@@ -125,6 +135,7 @@ async function scrapeJSON(id, tag) {
         wins = matchData.teams[playerTeamColour].rounds_won;
         loss = matchData.teams[playerTeamColour].rounds_lost;
         gameResult = matchData.teams[playerTeamColour].has_won;
+        // Add all the information required to draw the image
         teamStats.forEach(element => {
             riotIDs.push(element[0])
             agentsNames.push(element[2])
@@ -182,44 +193,68 @@ async function retrieveText() {
 		ACSs = ACSs.concat(textByOption[option].text3);
 		KDAs = KDAs.concat(textByOption[option].text4);
 	}
-	wins = document.getElementById("rounW").value;
-	loss = document.getElementById("rounL").value;
+	wins = document.getElementById("roundW").value;
+	loss = document.getElementById("roundL").value;
+    matchDetails.map = document.getElementById("matchMap").value;
+	matchDetails.mode = document.getElementById("matchMode").value;
+    matchDetails.time = document.getElementById("matchTime").value;
     generateImage()
 };
 
 function drawResult(context) {
+    function matchInfo(context) {
+        context.font = "20px din, sans-serif";
+	    context.textAlign = "center";
+        // https://stackoverflow.com/a/58531661
+        let time;
+        try {
+            time = new Date(matchDetails.time).toISOString().slice(11,19)  
+        } catch {
+            time = matchDetails.time
+        };
+        
+        context.fillText(`${matchDetails.map} ⬩ ${matchDetails.mode} ⬩ ${time}`, 960, 44);
+    };
+    function victory(context)  {
+        context.fillStyle = valGreen;
+        context.fillText("VICTORY", 960, 458);
+        winX = 282;
+        lossX = 1642;
+        matchInfo(context)
+    };
+    function draw(context)  {
+        context.fillStyle = valGray;
+        context.fillText("DRAW", 960, 458);
+        winX = 493
+        lossX = 1436
+        matchInfo(context)
+    };
+    function defeat(context)  {
+        context.fillStyle = valRed;
+        context.fillText("DEFEAT", 960, 458);
+        winX = 417
+        lossX = 1511
+        matchInfo(context)
+    };
+    // init
 	context.font = "550px tungsten, sans-serif";
 	context.textAlign = "center";
 	var winX;
 	var lossX;
     if (typeof gameResult !== 'undefined' && wins !== loss) {
         if (gameResult == true) {
-            context.fillStyle = valGreen;
-            context.fillText("VICTORY", 960, 458);
-            winX = 282;
-            lossX = 1642;
+            victory(context)
         } else {
-            context.fillStyle = valRed;
-            context.fillText("DEFEAT", 960, 458);
-            winX = 417
-            lossX = 1511
+            defeat(context)
         };
     } else if (wins < loss) {
-        context.fillStyle = valRed;
-        context.fillText("DEFEAT", 960, 458);
-        winX = 417
-        lossX = 1511
+        defeat(context)
     } else if (wins == loss) {
-        context.fillStyle = valGray;
-        context.fillText("DRAW", 960, 458);
-        winX = 493
-        lossX = 1436
+        draw(context)
     } else {
-        context.fillStyle = valGreen;
-        context.fillText("VICTORY", 960, 458);
-        winX = 282;
-        lossX = 1642;
+        victory(context)
     };
+    // Draw Rounds Won/Lost
 	context.font = "128px tungsten, sans-serif";
 	context.fillStyle = valGreen;
 	context.textAlign = "right";
@@ -240,10 +275,10 @@ function drawAgentGradient(context) {
 
 function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
     function drawAgentStats(context, index, location) {
-        // Calculate the x-coordinate of the first rectangle
+        // Calculate the x-coordinate of the first box
         const x = 30 + (310 * (location + 1))
     
-        // Calculate the y-coordinate of the first rectangle
+        // Constant starting y value
         const y = 626
     
         // Agent Name
@@ -316,26 +351,31 @@ function drawAgents(context, imageWidth, imageHeight) {
 	// Loop through 5 rectangles and draw them on the canvas
 	for (let i = 0; i < 5; i++) {
 		let j = drawOrder[i];
+        // First box
         if (j == 0) {
 			let multW = imageWidth * 0.9
 			let multH = imageHeight * 0.9
 			let x = startX + 44
 			let y = canvas.height - multH - 38;
             draw(context, i, x, y, multW, multH)
+        // Second Box
 		} else if (j == 1) {
 			let x = startX + j * (300 + 12)
 			let y = canvas.height - imageHeight - 38;
             draw(context, i, x, y, imageWidth, imageHeight)
+        // Third Box
         } else if (j == 2) {
             let multW = imageWidth * 1.1
             let multH = imageHeight * 1.1
             let x = startX + j * (300) - 17
             let y = canvas.height - multH - 38;
             draw(context, i, x, y, multW, multH)
+        // Forth Box
         } else if (j == 3) {
 			let x = startX + j * (300 + 10.5)
 			let y = canvas.height - imageHeight - 38;
             draw(context, i, x, y, imageWidth, imageHeight)
+        // Fifth Box
 		} else {
 			let multW = imageWidth * 0.9
 			let multH = imageHeight * 0.9
