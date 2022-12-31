@@ -2,24 +2,34 @@
   "version": "0.2.0",
   "configurations": [
     {
-    "name": "Launch via node",
-    "type": "node",
-    "request": "launch",
-    "cwd": "${workspaceFolder}",
-    "runtimeArgs": ["."]
-    },
-    {
-      "name": "Launch test.js",
+      "name": "Debug Discord Bot",
       "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "runtimeArgs": ["test.js"]
-      },
+      "runtimeArgs": [
+        "."
+      ]
+    },
     {
+      "name": "Deploy Commands",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": [
+        "deploy.js"
+      ]
+    },
+    {
+      "name": "Debug Crosshair HTML",
       "type": "firefox",
       "request": "launch",
-      "name": "Launch my cool app",
-      "url": "http://127.0.0.1:3000/webpage/index.html"
+      "url": "http://127.0.0.1:3000/js/crosshair/generator.html",
+      "pathMappings": [
+        {
+          "url": "http://127.0.0.1:3000/js",
+          "path": "${workspaceFolder}/js"
+        }
+      ]
     }
   ]
 

@@ -1,8 +1,8 @@
 const { createCanvas, registerFont, Image, loadImage } = require('canvas')
-// registerFont('./generate_image/fonts/Tungsten-Bold.ttf', { family: 'Tungsten' });
-// registerFont('./generate_image/fonts/DINNextW1G-Light.ttf', { family: 'DIN Next W1G', weight: 'light' });
-// registerFont('./generate_image/fonts/DINNextW1G-Regular.ttf', { family: 'DIN Next W1G', weight: 'normal' });
-// registerFont('./generate_image/fonts/DINNextW1G-Medium.ttf', { family: 'DIN Next W1G', weight: 'medium' });
+//registerFont('./js/create_image/fonts/Tungsten-Bold.ttf', { family: 'Tungsten' });
+//registerFont('./js/create_image/fonts/DINNextW1G-Light.ttf', { family: 'DIN Next W1G', weight: 'light' });
+//registerFont('./js/create_image/fonts/DINNextW1G-Regular.ttf', { family: 'DIN Next W1G', weight: 'normal' });
+//registerFont('./js/create_image/fonts/DINNextW1G-Medium.ttf', { family: 'DIN Next W1G', weight: 'medium' });
 
 var agentsNames = [];
 var riotIDs = [];
@@ -147,65 +147,13 @@ async function scrapeJSON(puuid, id, tag, region) {
 	await drawResult(ctx);
 	// Draw the Images
 	await drawAgents(ctx, 850, 772);
-	// Draw the Gradient
-	await drawAgentGradient(ctx);
-	// Draw the Rectangles
+	// Draw the Gradient covering Agents lower half
+	await loadImage('./js/create_image/bg/gradient.png').then((image) => {
+        ctx.drawImage(image, 0, 600, canvas.width, canvas.height - 600);
+    });
+	// Draw the Stats and their containers
 	await drawStatBoxs(ctx, 283, 310);
     return canvas.toBuffer();
-};
-
-async function retrieveText() {
-	var textByOption = {};
-    resetVars();
-	for (var i = 0; i < localStorage.length; i++) {
-		var key = localStorage.key(i);
-
-		if (key.startsWith('option')) {
-			var parts = key.split('-');
-			var option = parts[0];
-			var textNum = parts[1];
-			var text = localStorage.getItem(key);
-
-			// Initialize the text arrays for the option if they don't exist
-			if (!textByOption[option]) {
-				textByOption[option] = {
-					text1: [],
-					text2: [],
-					text3: [],
-					text4: []
-				};
-			}
-
-			// Add the text to the appropriate array for the option
-			if (textNum === 'text1') {
-				textByOption[option].text1.push(text.toUpperCase());
-			} else if (textNum === 'text2') {
-				textByOption[option].text2.push(text);
-			} else if (textNum === 'text3') {
-				textByOption[option].text3.push(text);
-			} else if (textNum === 'text4') {
-				textByOption[option].text4.push(text);
-			}
-		}
-	}
-
-	// Get the keys for the textByOption object in alphabetical order
-	var options = Object.keys(textByOption).sort();
-
-	// Iterate over the options and retrieve the text for each option
-	for (var i = 0; i < options.length; i++) {
-		var option = options[i];
-		agentsNames = agentsNames.concat(textByOption[option].text1);
-		riotIDs = riotIDs.concat(textByOption[option].text2);
-		ACSs = ACSs.concat(textByOption[option].text3);
-		KDAs = KDAs.concat(textByOption[option].text4);
-	}
-	wins = document.getElementById('roundW').value;
-	loss = document.getElementById('roundL').value;
-    matchDetails.map = document.getElementById('matchMap').value;
-	matchDetails.mode = document.getElementById('matchMode').value;
-    matchDetails.time = document.getElementById('matchTime').value;
-    generateImage()
 };
 
 function drawResult(context) {
@@ -271,13 +219,6 @@ function drawResult(context) {
 	context.fillText(loss, lossX, 158);
 };
 
-async function drawAgentGradient(context) {
-	const gradHeight = 600;
-    await loadImage('./generate_image/bg/UI_MVP_floor.png').then((image) => {
-        context.drawImage(image, 0, gradHeight, canvas.width, canvas.height - gradHeight);
-    });
-};
-
 async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
     function drawAgentStats(context, index, location) {
         // Calculate the x-coordinate of the first box
@@ -327,11 +268,11 @@ async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
         let j = drawOrder[i]
 		const image = new Image();
 		if (j == 2) {
-			await loadImage('./generate_image/bg/mvp_box.png').then((image) => {
+			await loadImage('./js/create_image/bg/mvp_box.png').then((image) => {
                 context.drawImage(image, x + j * (rectangleWidth + 27), y, rectangleWidth, rectangleHeight);
             });
 		} else {
-			await loadImage('./generate_image/bg/box.png').then((image) => {
+			await loadImage('./js/create_image/bg/box.png').then((image) => {
                 context.drawImage(image, x + j * (rectangleWidth + 27), y, rectangleWidth, rectangleHeight);
             });
 		}
@@ -398,15 +339,15 @@ async function drawAgents(context, imageWidth, imageHeight) {
 
 async function drawBG(context) {
     if (wins < loss) {
-        await loadImage('./generate_image/bg/UI_MVP_DefeatBG.png').then((image) => {
+        await loadImage('./js/create_image/bg/defeat.png').then((image) => {
             context.drawImage(image, 0, 0);
         });
     } else if (wins == loss) {
-        await loadImage('./generate_image/bg/UI_MVP_DrawBG.png').then((image) => {
+        await loadImage('./js/create_image/bg/draw.png').then((image) => {
             context.drawImage(image, 0, 0);
         });
     } else {
-        await loadImage('./generate_image/bg/UI_MVP_VictoryBG.png').then((image) => {
+        await loadImage('./js/create_image/bg/victory.png').then((image) => {
             context.drawImage(image, 0, 0);
         });
     };
