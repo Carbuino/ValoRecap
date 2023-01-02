@@ -1,5 +1,7 @@
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
+const { CronJob } = require('cron');
+const { scrapeJSON } = require('./js/create_image/create_image')
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -21,6 +23,40 @@ for (const file of commandFiles) {
 		console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
 	}
 }
+
+let getPlayedMatches = new CronJob('* */5 * * * *', async () => {
+	try {
+		const response = await fetch('./alerts.json');
+		const data = await response.json();
+		if (data.hasOwnProperty(0)) {
+		data[0].forEach(async element => {
+			let matchResults = await scrapeJSON(element.name, element.tag, element.region, element.match_id, element.puuid);
+			let image = matchResults.image;
+			let matchID = matchResults.match;
+			if ( image === false ) {
+				throw new Error(`${element.name}#${element.tag} - No new match played`);
+			};
+			element.match_id = matchID
+			element.channel_id.forEach(channel => {
+				client.channels.cache.get(channel).send({
+					files: [{
+					  attachment: image,
+					  name: 'match_result.png'
+					}]
+				});
+			});
+		});
+		} else {
+			fs.watchFile('./alerts.json', '{[]}', err => {
+				if (err) {
+					console.error(err);
+				  }
+			});
+		};
+	} catch (err) {
+		console.error(err);
+	}
+});
 
 // When the client is ready, run this code (only once)
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'

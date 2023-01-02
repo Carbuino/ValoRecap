@@ -1,8 +1,8 @@
-const { createCanvas, registerFont, Image, loadImage } = require('canvas')
-//registerFont('./js/create_image/fonts/Tungsten-Bold.ttf', { family: 'Tungsten' });
-//registerFont('./js/create_image/fonts/DINNextW1G-Light.ttf', { family: 'DIN Next W1G', weight: 'light' });
-//registerFont('./js/create_image/fonts/DINNextW1G-Regular.ttf', { family: 'DIN Next W1G', weight: 'normal' });
-//registerFont('./js/create_image/fonts/DINNextW1G-Medium.ttf', { family: 'DIN Next W1G', weight: 'medium' });
+const { createCanvas, registerFont, loadImage } = require('canvas')
+registerFont('./js/create_image/fonts/Tungsten-Bold.ttf', {family: 'Tungsten'});
+registerFont('./js/create_image/fonts/DINNextW1G-Light.ttf', {family: 'DIN Next W1G', weight: '300'});
+registerFont('./js/create_image/fonts/DINNextW1G-Regular.ttf', {family: 'DIN Next W1G', weight: '400'});
+registerFont('./js/create_image/fonts/DINNextW1G-Medium.ttf', {family: 'DIN Next W1G', weight: '500'});
 
 var agentsNames = [];
 var riotIDs = [];
@@ -46,16 +46,23 @@ function resetVars() {
     gameResult = undefined;
 };
 
-async function scrapeJSON(puuid, id, tag, region) {
-    async function getJSON() {
-        let response = await fetch(`https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/${region}/${puuid}?size=1`);
-        let data = await response.json();
-        return data
-    }
+async function scrapeJSON(id, tag, region, lastMatchID, puuid) {
     resetVars();
+    let response;
     // get match data
-    data = await getJSON();
+    if ( puuid === undefined) {
+        response = await fetch(`https://api.henrikdev.xyz/valorant/v3/matches/${region}/${id}/${tag}?size=1`);
+    } else {
+        response = await fetch(`https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/${region}/${puuid}?size=1`);
+    };
+    let data = await response.json();
     let matchData = data.data[0];
+    let newMatchID = matchData.metadata.matchid;
+
+    if ( lastMatchID === newMatchID ) {
+        return { image: false, match: newMatchID };
+    }
+
     let playerList = matchData.players.all_players;
     let statsList = [];
     let playerIndex = 0;
@@ -72,14 +79,16 @@ async function scrapeJSON(puuid, id, tag, region) {
     matchDetails.time = matchData.metadata.game_length
 
     if (matchData.metadata.mode == 'Deathmatch') {
-        // Sort list from worst to best performers, by most kills then highest ACS
+        // Sort list from worst to best performers, most kills [4], highest ACS [3], then least deaths [5]
         statsList.sort((a,b) => {
             if (a[4] !== b[4]) {
-                return a[4] - b[4]
-            } else {
-                return b[3] < a[3]
+              return a[4] - b[4];
             }
-        })
+            if (a[3] !== b[3]) {
+              return a[3] - b[3];
+            }
+            return b[5] - b[5];
+          });
         // Create list of only top 5 players in match
         let killsTop5 = statsList.slice(-5);
         let playerTop5 = false;
@@ -120,14 +129,16 @@ async function scrapeJSON(puuid, id, tag, region) {
         for (var i = 0; i < playerTeam.length; i++) {
             teamStats.push([playerTeam[i].name, playerTeam[i].tag, playerTeam[i].character.toUpperCase(), playerTeam[i].stats.score, playerTeam[i].stats.kills, playerTeam[i].stats.deaths, playerTeam[i].stats.assists]);
         };
-        // Sort list from worst to best performers, by most kills [4] then highest ACS [3]
+        // Sort list from worst to best performers, by highest ACS [3], most kills [4] then least deaths [5]
         teamStats.sort((a,b) => {
-            if (a[4] !== b[4]) {
-                return a[4] - b[4]
-            } else {
-                return b[3] < a[3]
+            if (a[3] !== b[3]) {
+              return a[3] - b[3];
             }
-        })
+            if (a[4] !== b[4]) {
+              return a[4] - b[4];
+            }
+            return b[5] - b[5];
+          });
         // Rounds won and lost
         wins = matchData.teams[playerTeamColour].rounds_won;
         loss = matchData.teams[playerTeamColour].rounds_lost;
@@ -153,7 +164,7 @@ async function scrapeJSON(puuid, id, tag, region) {
     });
 	// Draw the Stats and their containers
 	await drawStatBoxs(ctx, 283, 310);
-    return canvas.toBuffer();
+    return { image: canvas.toBuffer(), match: newMatchID };
 };
 
 function drawResult(context) {
@@ -266,7 +277,6 @@ async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
 	// Loop through 5 rectangles and draw them on the canvas
 	for (let i = 0; i < 5; i++) {
         let j = drawOrder[i]
-		const image = new Image();
 		if (j == 2) {
 			await loadImage('./js/create_image/bg/mvp_box.png').then((image) => {
                 context.drawImage(image, x + j * (rectangleWidth + 27), y, rectangleWidth, rectangleHeight);

@@ -4,16 +4,44 @@ const { scrapeJSON } = require('../js/create_image/create_image');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('result')
-		.setDescription('Get Match Results'),
+		.setDescription('Get the last match result')
+    .addStringOption(option =>
+      option.setName('id')
+          .setDescription('Valorant Name')
+          .setRequired(true)
+      )
+    .addStringOption(option =>
+      option.setName('tag')
+          .setDescription('Valorant Tag ')
+          .setRequired(true)
+      )
+    .addStringOption(option =>
+      option.setName('region')
+          .setDescription('Game Region')
+          .setRequired(false)
+          .addChoices(
+            { name: 'NA/LATAM/BR', value: 'na' },
+            { name: 'EU', value: 'eu' },
+            { name: 'AP', value: 'ap' },
+            { name: 'KR', value: 'kr' }
+        )),
 	async execute(interaction) {
+    const id = interaction.options.getString('id') ?? 'No Valorant IGN provided';
+    const tag = interaction.options.getString('tag') ?? 'No Valorant Tag provided';
+    const region = interaction.options.getString('region') ?? 'na';
+
     await interaction.deferReply();
-    var imageData = await scrapeJSON('46ebb91a-a3d7-5143-8b55-78296eefbd1f', 'Carbon', '099', 'na');
-    console.log('Results Image Generated!')
-		await interaction.editReply({
-      files: [{
-        attachment: imageData,
-        name: 'match_result.png'
-      }]
-    });
-	},
+    try {
+      var imageData = await scrapeJSON(id, tag, region).image;
+      await interaction.editReply({
+        files: [{
+          attachment: imageData,
+          name: 'match_result.png'
+        }]
+      });
+    } catch (err) {
+      await interaction.editReply({ content: `${id}#${tag} in region ${region} doesn't exist!`, ephemeral: true });
+      console.error('error', err)
+    };
+	}
 };

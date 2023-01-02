@@ -12,17 +12,17 @@ function getRandomNumber(min, max, precision = 0) {
 };
 
 function crosshairSettings() {
-    let color = getRandomNumber(0, 8);
+    let color = getRandomNumber(8, 8);
     let showCenterDot = chance(50);
     let showOutlines = chance(50);
     let firingErrorOverride = chance(50);
 
-    let showInnerLines = chance(50);
+    let showInnerLines = chance(70);
     let innerLineLengthLinked = chance(50);
     let innerMovementError = chance(50);
     let innerFiringError = chance(50);
 
-    let showOuterLines = chance(50);
+    let showOuterLines = chance(70);
     let outerLineLengthLinked = chance(50);
     let outerMovementError = chance(50);
     let outerFiringError = chance(50);
@@ -30,7 +30,7 @@ function crosshairSettings() {
     crosshairCode += `;c;${color}`
     if ( color ===  8 ) {
         let hexCode = Math.floor(Math.random()*16777215).toString(16); // https://css-tricks.com/snippets/javascript/random-hex-color/
-        crosshairCode += `;u;${hexCode}FF;b;1`
+        crosshairCode += `;u;${hexCode.toUpperCase()}FF;b;1`
     };
     // Outlines
     if ( showOutlines ) {
@@ -91,13 +91,13 @@ function crosshairSettings() {
 
 function sniperSettings() {
     let color = getRandomNumber(0, 8);
-    let showCenterDot = chance(50);
+    let showCenterDot = chance(90);
 
     crosshairCode += ';S';
     crosshairCode += `;c;${color}`
     if ( color ===  8 ) {
         let hexCode = Math.floor(Math.random()*16777215).toString(16); // https://css-tricks.com/snippets/javascript/random-hex-color/
-        crosshairCode += `;u;${hexCode}FF;b;1`
+        crosshairCode += `;u;${hexCode.toUpperCase()}FF;b;1`
     };
     // Center Dot
     if ( showCenterDot ) {
