@@ -58,7 +58,7 @@ async function scrapeJSON(id, tag, region, lastMatchID, puuid) {
     let data = await response.json();
     let matchData = data.data[0];
     let newMatchID = matchData.metadata.matchid;
-
+    
     if ( lastMatchID === newMatchID ) {
         return { image: false, match: newMatchID };
     }

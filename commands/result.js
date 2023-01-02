@@ -32,10 +32,13 @@ module.exports = {
 
     await interaction.deferReply();
     try {
-      var imageData = await scrapeJSON(id, tag, region).image;
+      var returnData = await scrapeJSON(id, tag, region);
+      if ( returnData.image === false ) {
+        throw new Error(`${element.name}#${element.tag} - error while generating`);
+      };
       await interaction.editReply({
         files: [{
-          attachment: imageData,
+          attachment: returnData.image,
           name: 'match_result.png'
         }]
       });
