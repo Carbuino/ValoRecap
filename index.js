@@ -4,6 +4,7 @@ const { CronJob } = require('cron');
 const { scrapeJSON } = require('./js/create_image/create_image')
 const fs = require('node:fs');
 const path = require('node:path');
+require('log-timestamp');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -24,43 +25,48 @@ for (const file of commandFiles) {
 	}
 }
 
-let getPlayedMatches = new CronJob('* */5 * * * *', async () => {
-	try {
-		const response = await fetch('./alerts.json');
-		const data = await response.json();
-		if (data.hasOwnProperty(0)) {
-		data[0].forEach(async element => {
-			let matchResults = await scrapeJSON(element.name, element.tag, element.region, element.match_id, element.puuid);
+let getPlayedMatches = new CronJob('*/5 * * * *', async () => {
+	console.log(`Checking Alerts`);
+	const alertData = fs.readFileSync('./alerts.json');
+	const alerts = JSON.parse(alertData);
+	if (alerts.hasOwnProperty(0)) {
+		for (let i = 0; i < alerts.length; i++) {
+			let alert = alerts[i];
+			try {
+				var matchResults = await scrapeJSON(alert.name, alert.tag, alert.region, alert.match_id, alert.puuid);
+			} catch (err) {
+				console.error(`Error getting match data for ${alert.name}#${alert.tag}\n${err}`);
+				continue;
+			};
 			let image = matchResults.image;
 			let matchID = matchResults.match;
-			if ( image === false ) {
-				throw new Error(`${element.name}#${element.tag} - No new match played`);
-			};
-			element.match_id = matchID
-			element.channel_id.forEach(channel => {
-				client.channels.cache.get(channel).send({
+			if ( image !== false ) {
+			console.log(`Posting New Results Image for ${alert.name}#${alert.tag}`);
+			alert.match_id = matchID;
+			alert.channel_id.forEach(async channel => {
+				const mailBox = await client.channels.fetch(channel);
+				mailBox.send({
+					content: `${alert.name}#${alert.tag} finished a game of Valorant!`,
 					files: [{
-					  attachment: image,
-					  name: 'match_result.png'
-					}]
+						attachment: image,
+						name: `${alert.name}#${alert.tag}_match_result.png`
+						}]
+					});
 				});
-			});
-		});
-		} else {
-			fs.watchFile('./alerts.json', '{[]}', err => {
-				if (err) {
-					console.error(err);
-				  }
-			});
+			};
 		};
-	} catch (err) {
-		console.error(err);
-	}
+	console.log('Writing updated alerts.json...')
+	fs.writeFileSync('./alerts.json', JSON.stringify(alerts, null, 4));
+	console.log('----- Alerts Cron process complete -----')
+	} else {
+		fs.writeFileSync('./alerts.json', '[]');
+	};
 });
 
 // When the client is ready, run this code (only once)
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'
 client.once(Events.ClientReady, c => {
+	getPlayedMatches.start()
 	console.log(`Ready! Logged in as ${c.user.tag}`);
 });
 

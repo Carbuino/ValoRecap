@@ -39,7 +39,7 @@ module.exports = {
       await interaction.editReply({
         files: [{
           attachment: returnData.image,
-          name: 'match_result.png'
+          name: `${id}#${tag}_match_result.png`
         }]
       });
     } catch (err) {
