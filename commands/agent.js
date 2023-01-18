@@ -14,7 +14,7 @@ module.exports = {
                     { name: 'Initiator', value: 'Initiator' },
                     { name: 'Sentinel', value: 'Sentinel' },
                     { name: 'All', value: 'All' },
-                )),
+        )),
 	async execute(interaction) {
         await interaction.deferReply();
         const agentType = interaction.options.getString('type') ?? 'No Agent Type was provided';

@@ -1,10 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { scrapeJSON } = require('../js/create_image/create_image');
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('result')
-		.setDescription('Get the last match result')
+		.setName('track')
+		.setDescription('Add Account to automatically posted Results')
         .addStringOption(option =>
             option.setName('id')
                     .setDescription('Valorant Name')
@@ -31,20 +30,7 @@ module.exports = {
         const region = interaction.options.getString('region') ?? 'na';
 
         await interaction.deferReply();
-        try {
-            var returnData = await scrapeJSON(id, tag, region);
-            if ( returnData.image === false ) {
-                throw new Error(`${element.name}#${element.tag} - error while generating`);
-            };
-            await interaction.editReply({
-                files: [{
-                    attachment: returnData.image,
-                    name: `${id}#${tag}_match_result.png`
-                }]
-            });
-        } catch (err) {
-            await interaction.editReply({ content: `${id}#${tag} in region ${region} doesn't exist!`, ephemeral: true });
-            console.error('error', err)
-        };
-	}
+        const alertData = fs.readFileSync('./alerts.json');
+	    const alerts = JSON.parse(alertData);
+	},
 };
