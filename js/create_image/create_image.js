@@ -6,6 +6,7 @@ registerFont('./js/create_image/fonts/DINNextW1G-Medium.ttf', {family: 'DIN Next
 
 var agentsNames = [];
 var riotIDs = [];
+var riotTags = [];
 var ACSs = [];
 var KDAs = [];
 var imageURLs = [];
@@ -49,6 +50,7 @@ function resetVars() {
 async function scrapeJSON(id, tag, region, lastMatchID, puuid) {
     resetVars();
     let response;
+    gameRegion = region;
     // get match data
     if ( puuid === undefined) {
         response = await fetch(`https://api.henrikdev.xyz/valorant/v3/matches/${region}/${id}/${tag}?size=1`);
@@ -74,9 +76,10 @@ async function scrapeJSON(id, tag, region, lastMatchID, puuid) {
         if (id == playerList[i].name && tag == playerList[i].tag) { playerIndex = i };
     };
 
-    matchDetails.map = matchData.metadata.map
-    matchDetails.mode = matchData.metadata.mode
-    matchDetails.time = matchData.metadata.game_length
+    matchDetails.map = matchData.metadata.map;
+    matchDetails.mode = matchData.metadata.mode;
+    matchDetails.time = matchData.metadata.game_length;
+    matchDetails.region = matchData.metadata.region;
 
     if (matchData.metadata.mode == 'Deathmatch') {
         // Sort list from worst to best performers, most kills [4], highest ACS [3], then least deaths [5]
@@ -146,6 +149,7 @@ async function scrapeJSON(id, tag, region, lastMatchID, puuid) {
         // Add all the information required to draw the image
         teamStats.forEach(element => {
             riotIDs.push(element[0]);
+            riotTags.push(element[1]);
             agentsNames.push(element[2]);
             ACSs.push(~~(element[3]/(wins + loss)));
             KDAs.push(`${element[4]} / ${element[5]} / ${element[6]}`);
@@ -231,7 +235,7 @@ function drawResult(context) {
 };
 
 async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
-    function drawAgentStats(context, index, location) {
+    async function drawAgentStats(context, index, location) {
         // Calculate the x-coordinate of the first box
         const x = 30 + (310 * (location + 1))
     
@@ -244,11 +248,34 @@ async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
         context.fillStyle = 'white';
         context.fillText(agentsNames[index], x, y);
     
-        // Riot ID
+        // Riot ID and Rank
         context.font = '500 28px "DIN Next W1G"';
         if (riotIDs[index] == goldName) {
+            if (matchDetails.mode == 'Competitive') {
+                try {
+                    response = await fetch(`https://api.henrikdev.xyz/valorant/v1/mmr/${matchDetails.region}/${riotIDs[index]}/${riotTags[index]}`);
+                    let data = await response.json();
+                    let mmrData = data.data;
+                    await loadImage(mmrData.images.large).then((image) => {
+                        context.drawImage(image, x - 50, y + 260, 100, 100);
+                    });
+                    //Current MMR
+                    context.font = '300 22px "DIN Next W1G"';
+                    context.strokeStyle = 'black';
+                    context.lineWidth = 3;
+                    context.strokeText(mmrData.ranking_in_tier, x - 1, y + 317);
+                    context.fillText(mmrData.ranking_in_tier, x - 1, y + 317);
+                    if ( mmrData.mmr_change_to_last_game > 0 ) { mmrData.mmr_change_to_last_game = `+${mmrData.mmr_change_to_last_game}`};
+                    //MMR Change
+                    context.font = '300 22px "DIN Next W1G"';
+                    context.strokeText(mmrData.mmr_change_to_last_game, x, y + 260);
+                    context.fillText(mmrData.mmr_change_to_last_game, x, y + 260);
+                } catch (error) {
+                    console.log(error);
+                };
+            };
             context.fillStyle = valGold;
-        }
+        };    
         context.fillText(riotIDs[index], x, y + 40);
         context.fillStyle = 'white';
     
@@ -286,7 +313,7 @@ async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
                 context.drawImage(image, x + j * (rectangleWidth + 27), y, rectangleWidth, rectangleHeight);
             });
 		}
-		drawAgentStats(context, i, j);
+		await drawAgentStats(context, i, j);
 	}
 
 };

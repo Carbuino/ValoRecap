@@ -55,7 +55,7 @@ let getPlayedMatches = new CronJob('*/5 * * * *', async () => {
 						content: `${alert.name}#${alert.tag} finished a game of Valorant!`,
 						files: [{
 							attachment: image,
-							name: `${alert.name}#${alert.tag}_match_result.png`
+							name: `${alert.name}-${alert.tag}_match_result.png`
 						}]
 					});
 				});
