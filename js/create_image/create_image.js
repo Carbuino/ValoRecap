@@ -78,7 +78,7 @@ async function scrapeJSON(id, tag, region, lastMatchID, puuid) {
 
     matchDetails.map = matchData.metadata.map;
     matchDetails.mode = matchData.metadata.mode;
-    matchDetails.time = matchData.metadata.game_length;
+    matchDetails.time = matchData.metadata.game_length * 1000;
     matchDetails.region = matchData.metadata.region;
 
     if (matchData.metadata.mode == 'Deathmatch') {
