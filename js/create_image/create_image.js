@@ -249,7 +249,6 @@ async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
         context.fillText(agentsNames[index], x, y);
     
         // Riot ID and Rank
-        context.font = '500 28px "DIN Next W1G"';
         if (riotIDs[index] == goldName) {
             if (matchDetails.mode == 'Competitive') {
                 try {
@@ -274,6 +273,7 @@ async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
                     console.log(error);
                 };
             };
+            context.font = '500 28px "DIN Next W1G"';
             context.fillStyle = valGold;
         };    
         context.fillText(riotIDs[index], x, y + 40);
