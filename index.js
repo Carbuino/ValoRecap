@@ -38,24 +38,26 @@ let getPlayedMatches = new CronJob('*/5 * * * *', async () => {
 			let alert = alerts[i];
 			// Parse Match Data
 			try {
-				var matchResults = await scrapeJSON(alert.name, alert.tag, alert.region, alert.match_id, alert.puuid);
+				var matchResults = await scrapeJSON(alert.match_id, alert.puuid);
 			} catch (err) {
-				console.error(`Error getting match data for ${alert.name}#${alert.tag}\n${err}`);
+				console.error(`Error getting match data for puuid ${alert.puuid}\n${err}`);
 				continue;
 			};
 			// Post Image
 			let image = matchResults.image;
 			let matchID = matchResults.match;
+			let pid = matchResults.pid;
+			let ptag = matchResults.ptag;
 			if ( image !== false ) {
-				console.log(`Posting New Results Image for ${alert.name}#${alert.tag}`);
+				console.log(`Posting New Results Image for ${pid}#${ptag}`);
 				alert.match_id = matchID;
 				alert.channel_id.forEach(async channel => {
 					const mailBox = await client.channels.fetch(channel);
 					mailBox.send({
-						content: `${alert.name}#${alert.tag} finished a game of Valorant!`,
+						content: `${pid}#${ptag} finished a game of Valorant!`,
 						files: [{
 							attachment: image,
-							name: `${alert.name}-${alert.tag}_match_result.png`
+							name: `${pid}-${ptag}_match_result.png`
 						}]
 					});
 				});

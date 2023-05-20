@@ -1,4 +1,7 @@
 const { createCanvas, registerFont, loadImage } = require('canvas')
+const HenrikAPI = require('unofficial-valorant-api');
+const { henrik_key } = require('./../../config.json');
+
 registerFont('./js/create_image/fonts/Tungsten-Bold.ttf', {family: 'Tungsten'});
 registerFont('./js/create_image/fonts/DINNextW1G-Light.ttf', {family: 'DIN Next W1G', weight: '300'});
 registerFont('./js/create_image/fonts/DINNextW1G-Regular.ttf', {family: 'DIN Next W1G', weight: '400'});
@@ -15,6 +18,8 @@ var goldName = '';
 var wins = 0;
 var loss = 0;
 var gameResult;
+
+const VAPI = new HenrikAPI(henrik_key);
 
 const canvas = createCanvas(1920, 1080)
 const ctx = canvas.getContext('2d');
@@ -47,18 +52,29 @@ function resetVars() {
     gameResult = undefined;
 };
 
-async function scrapeJSON(id, tag, region, lastMatchID, puuid) {
+async function scrapeJSON(lastMatchID, puuid, id, tag) {
     resetVars();
-    let response;
-    gameRegion = region;
+    let region;
     // get match data
     if ( puuid === undefined) {
-        response = await fetch(`https://api.henrikdev.xyz/valorant/v3/matches/${region}/${id}/${tag}?size=1`);
+        let accFetch = await fetch(`https://api.henrikdev.xyz/valorant/v1/account/${id}/${tag}`);
+        let accResponse = await accFetch.json();
+        let accData = accResponse.data;
+        
+        puuid = accData.puuid;
+        region = accData.region;
     } else {
-        response = await fetch(`https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/${region}/${puuid}?size=1`);
-    };
-    let data = await response.json();
-    let matchData = data.data[0];
+        let accFetch = await fetch(`https://api.henrikdev.xyz/valorant/v1/by-puuid/account/${puuid}`);
+        let accResponse = await accFetch.json();
+        let accData = accResponse.data;
+        
+        id = accData.name;
+        tag = accData.tag;
+        region = accData.region;
+    }
+    
+    const matchCall = await VAPI.getMatchesByPUUID({region: region, puuid: puuid, size: 1});
+    let matchData = matchCall.data[0];
     let newMatchID = matchData.metadata.matchid;
     
     if ( lastMatchID === newMatchID ) {
@@ -168,7 +184,7 @@ async function scrapeJSON(id, tag, region, lastMatchID, puuid) {
     });
 	// Draw the Stats and their containers
 	await drawStatBoxs(ctx, 283, 310);
-    return { image: canvas.toBuffer(), match: newMatchID };
+    return { image: canvas.toBuffer(), match: newMatchID, pid: id, ptag: tag  };
 };
 
 function drawResult(context) {
@@ -251,10 +267,9 @@ async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
         // Riot ID and Rank
         if (riotIDs[index] == goldName) {
             if (matchDetails.mode == 'Competitive') {
-                try {
-                    response = await fetch(`https://api.henrikdev.xyz/valorant/v1/mmr/${matchDetails.region}/${riotIDs[index]}/${riotTags[index]}`);
-                    let data = await response.json();
-                    let mmrData = data.data;
+                try {  
+                    const mmrCall = await VAPI.getMMR({version: 'v1', region: matchDetails.region, name: riotIDs[index], tag: riotTags[index]});
+                    let mmrData = mmrCall.data;
                     await loadImage(mmrData.images.large).then((image) => {
                         context.drawImage(image, x - 50, y + 260, 100, 100);
                     });
@@ -270,12 +285,13 @@ async function drawStatBoxs(context, rectangleWidth, rectangleHeight) {
                     context.strokeText(mmrData.mmr_change_to_last_game, x, y + 260);
                     context.fillText(mmrData.mmr_change_to_last_game, x, y + 260);
                 } catch (error) {
+                    console.log('Failed to get MMR for ' + riotIDs[index]);
                     console.log(error);
                 };
             };
-            context.font = '500 28px "DIN Next W1G"';
             context.fillStyle = valGold;
-        };    
+        };
+        context.font = '500 28px "DIN Next W1G"';
         context.fillText(riotIDs[index], x, y + 40);
         context.fillStyle = 'white';
     

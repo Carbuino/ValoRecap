@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { genCode } = require('../js/crosshair/crosshair');
+const { genCode } = require('../js/crosshair');
 
 module.exports = {
 	data: new SlashCommandBuilder()
